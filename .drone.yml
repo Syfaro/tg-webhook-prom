@@ -1,0 +1,29 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build-latest
+  image: plugins/docker
+  settings:
+    auto_tag: true
+    password:
+      from_secret: docker_password
+    registry: registry.huefox.com
+    repo: registry.huefox.com/tg-webhook-prom
+    username:
+      from_secret: docker_username
+  when:
+    branch:
+    - main
+
+---
+kind: signature
+hmac: 6e788d773d79b55a9ded8e54744089a792042051799fb315345f4e21d9bbe6f0
+
+...
