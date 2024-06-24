@@ -14,15 +14,15 @@ import (
 )
 
 var (
-	pendingUpdates = promauto.NewGauge(prometheus.GaugeOpts{
+	pendingUpdates = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "telegram_pending_updates",
 		Help: "The number of updates pending for the webhook",
-	})
+	}, []string{"username"})
 
-	lastErrorDate = promauto.NewGauge(prometheus.GaugeOpts{
+	lastErrorDate = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "telegram_last_error_date",
 		Help: "The unix timestamp of the last webhook error",
-	})
+	}, []string{"username"})
 )
 
 func init() {
@@ -32,9 +32,14 @@ func init() {
 }
 
 func main() {
-	log.Info("Starting exporter")
+	log.Info("starting exporter")
 
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_APITOKEN"))
+	token := os.Getenv("TELEGRAM_API_TOKEN")
+	if len(token) == 0 {
+		log.Fatal("missing TELEGRAM_API_TOKEN")
+	}
+
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,7 +56,7 @@ func main() {
 }
 
 func updateMetrics(bot *tgbotapi.BotAPI) {
-	log.Trace("Updating metrics")
+	log.Trace("updating metrics")
 
 	webhookInfo, err := bot.GetWebhookInfo()
 	if err != nil {
@@ -61,8 +66,8 @@ func updateMetrics(bot *tgbotapi.BotAPI) {
 
 	log.Debugf("%+v", webhookInfo)
 
-	pendingUpdates.Set(float64(webhookInfo.PendingUpdateCount))
-	lastErrorDate.Set(float64(webhookInfo.LastErrorDate))
+	pendingUpdates.WithLabelValues(bot.Self.UserName).Set(float64(webhookInfo.PendingUpdateCount))
+	lastErrorDate.WithLabelValues(bot.Self.UserName).Set(float64(webhookInfo.LastErrorDate))
 
-	log.Info("Update complete")
+	log.Info("update complete")
 }
