@@ -52,6 +52,9 @@ func main() {
 	}()
 
 	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK"))
+	})
 	http.ListenAndServe(":2112", nil)
 }
 
